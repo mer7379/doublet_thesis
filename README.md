@@ -1,1 +1,1 @@
-First steps, Quality control
+First step: Quality control
