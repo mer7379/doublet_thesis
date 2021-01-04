@@ -32,9 +32,9 @@ VlnPlot(sce.seu, features = c("nFeature_RNA",
 # FeatureScatter is typically used to visualize feature-feature relationships, but can be used
 # for anything calculated by the object, i.e. columns in object metadata, PC scores etc.
 
-plot1 <- FeatureScatter(sce.seu, feature1 = "nCount_RNA", feature2 = "percent.mt")
-plot2 <- FeatureScatter(sce.seu, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
-plot1 + plot2
+#plot1 <- FeatureScatter(sce.seu, feature1 = "nCount_RNA", feature2 = "percent.mt")
+#plot2 <- FeatureScatter(sce.seu, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+#plot1 + plot2
 sce.seu <- subset(sce.seu, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
 
 #Normalizing with log normalization
@@ -75,7 +75,8 @@ library(ROCR)
 library(parallel)
 library(DoubletFinder)
 
-sce.finder <- doubletFinder_v3(sce.seu, PCs = 1:10, pN = 0.25, pK = 0.01, reuse.pANN = FALSE, sct = FALSE)
+nExp_poi <- round(0.075*nrow(sce.seu@meta.data))
+sce.finder <- doubletFinder_v3(sce.seu, PCs = 1:10, pN = 0.25, pK = 0.01, nExp = nExp_poi, reuse.pANN = FALSE, sct = FALSE)
 summary(sce.finder)
 
 ########## clustering
