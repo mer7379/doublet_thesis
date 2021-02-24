@@ -100,4 +100,3 @@ plot_hto <- DimPlot(sce.finder,pt.size = 1,label=TRUE, label.size = 5,reduction 
 #look at cluster IDs of the first 6 cells
 #head(Idents(sce.seu), 6)
 
-##https://github.com/chris-mcginnis-ucsf/DoubletFinder/issues/44
