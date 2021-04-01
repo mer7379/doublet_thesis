@@ -13,7 +13,13 @@ setwd("/Users/ashenafiduba/Downloads/thesis/data")
 #BiocManager::install("DoubletDecon")
 #library(scater)
 #library(SingleCellExperiment)
+library(fields)
+library(KernSmooth)
+library(ROCR)
+library(parallel)
+library(DoubletFinder)
 library(Seurat)
+library(BiocSingular)
 # Load in the UMI matrix
 pbmc.umis <- readRDS("pbmc_umi_mtx.rds")
 
@@ -84,19 +90,55 @@ library(DoubletFinder)
 
 nExp_poi <- round(0.075*nrow(sce.seu@meta.data))
 sce.finder <- doubletFinder_v3(sce.seu, PCs = 1:10, pN = 0.25, pK = 0.01, nExp = nExp_poi, reuse.pANN = FALSE, sct = FALSE)
-summary(sce.finder)
+summary(sce.finder$pANN_0.25_0.01_1243)
 
-### visualisation
+##################################
+######## visualisation ###########
+##################################
 plot_dl <- DimPlot(sce.finder,pt.size = 1,label=TRUE, label.size = 5,reduction = "umap",group.by = "DF.classifications_0.25_0.01_1243" )
 plot_hto <- DimPlot(sce.finder,pt.size = 1,label=TRUE, label.size = 5,reduction = "umap",group.by = "HTO_classification.global")
+plot_dl
+plot_hto
 
+##tsne plots
+pbmc.tsne <- RunTSNE(sce.finder, dims = 1:8, perplexity = 100)
+DimPlot(pbmc.tsne)
+TSNEPlot(pbmc.tsne)
 
-#pbmc.tsne <- RunTSNE(sce.finder, dims = 1:8, perplexity = 100)
-#DimPlot(pbmc.tsne)
-#next visualization
-########## clustering
-#sce.seu <- FindNeighbors(sce.seu, dims = 1:10)
-#sce.seu <- FindClusters(sce.seu, resolution = 0.5)
-#look at cluster IDs of the first 6 cells
-#head(Idents(sce.seu), 6)
+# select ground truth and pANN vectors from DF
+mydata <- data.frame(sce.finder$HTO_classification.global,sce.finder$pANN_0.25_0.01_1243)
+
+#split 70% train and 30%test
+dt <- sort(sample(nrow(mydata),nrow(mydata)*0.7))
+train <- mydata[dt,]
+test <- mydata[-dt,]
+test$y <- factor(test$sce.finder.HTO_classification.global, levels = c("Doublet","Singlet"), labels = c(1,0))
+train$y<- factor(train$sce.finder.HTO_classification.global, levels = c("Doublet","Singlet"), labels = c(1,0))
+#fit logistic regration
+model_reg <- glm(train$y~train$sce.finder.pANN_0.25_0.01_1243, data= train, family = binomial(link = "logit"))
+pred<-predict.glm(model_reg, newdata = data.frame(test$y,test$sce.finder.pANN_0.25_0.01_1243), type = c("response"))
+summary(model_reg)
+
+##############################################
+#########Performance analysis using ROC#######
+##############################################
+
+#BiocManager::install("pROC")
+library(pROC)
+g<-roc(train$y~pred)
+#plot.roc(train$y~pred, 
+#         percent = TRUE,
+ #        partial.auc=c(100, 90),
+  #       partial.auc.correct=TRUE, print.auc=TRUE,
+#        #display pAUC value on the plot with following options:
+#         print.auc.pattern = "Corrected pAUC (100-90%% SP):\n%.1f%%",
+#         print.auc.col = "#1c61b6",
+#         auc.polygon = TRUE, 
+#         auc.polygon.col = "#1c61b6",       # show pAUC as a polygon
+#         max.auc.polygon = TRUE, 
+#         max.auc.polygon.col = "#1c61b622", # also show the 100% polygon
+#         main = "Partial AUC (pAUC)")
+plot(g)
+abline(a=0, b= 1)
+
 
