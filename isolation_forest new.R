@@ -176,10 +176,3 @@ g<-roc(scores_unseen$anomaly_score~scores_train$anomaly_score)
 plot(g)
 abline(a=0, b= 1)
 g
-
-
-#as input you could use:
-#nCount_RNA
-#nFeature_RNA
-#percen.mt
-#nFeature/nCount
